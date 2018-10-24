@@ -2,10 +2,13 @@ package opt;
 
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.TreeSet;
 
 import poly.Polynomial;
 import util.Vector;
+import util.VectorException;
 
 /** The main optimization package: see project handout for functionality and definitions
  *  of terminology defined here.
@@ -57,8 +60,9 @@ public class Minimizer {
 	/** Set the initial starting point of gradient descent
 	 * 
 	 * @param x0
+	 * @throws VectorException 
 	 */
-	public void setX0(Vector x0) { 
+	public void setX0(Vector x0) throws VectorException { 
 		_x0.clear();
 		_x0.setAll(x0);
 	}
@@ -67,6 +71,30 @@ public class Minimizer {
 	// TODO: Your methods here!  You should add some helper methods that facilitate
 	//       the implementation of the methods below.
 	///////////////////////////////////////////////////////////////////////////////
+	
+	 public boolean areWeFarFromMinimum(){
+         return _lastGradNorm > _eps;
+     }
+     
+     public void buildPartialDerivatives(Polynomial p) throws Exception{
+         _var2gradp = new HashMap<String, Polynomial>();
+         TreeSet<String> allVars = p.getAllVars();
+         Iterator<String> iterate = allVars.iterator();
+         while(iterate.hasNext()){
+             String var = iterate.next();
+             _var2gradp.put(var, p.differentiate(var));
+         }
+     }
+     
+     public Vector calculateGradient(Vector lastpointFound) throws Exception{
+         Vector v = new Vector();
+         for(Entry<String, Polynomial> enter: _var2gradp.entrySet())
+             v.set(enter.getKey(), enter.getValue().evaluate(lastpointFound));
+         return v;
+             
+     }
+     
+     
 
 	/** Run the steepest descent algorithm -- see handout though some pseudocode is provided below.
 	 * 
@@ -74,29 +102,26 @@ public class Minimizer {
 	 * @throws Exception
 	 */
 	public void minimize(Polynomial p) throws Exception {
-			
-		// TODO: Build the partial derivatives of p for all variables in p
-		
-		// Start the gradient descent
-		_nIter = 0;
-		long start = System.currentTimeMillis();
-
-		// Initialize the starting point and last objective evaluation for starting point 
-		_lastx.clear();
-		_lastx.setAll(_x0);
-		_lastObjVal = p.evaluate(_x0);
-		
-		_lastGradNorm = Double.MAX_VALUE;
-		
-		// TODO: Main descent loop
-		//	while (iterations is less than maximum iterations allowed AND gradient norm is greater than eps) {
-		//	  increment iterations
-		//	  compute gradient and gradient norm
-		//	  compute new point by adding current point and the negation of the step size times the gradient
-		//	  evaluate the objective at the new point
-		//	  print iteration number, new point, objective at new point, i.e.
-		//      System.out.format("At iteration %d: %s objective value = %.3f\n", _nIter, _lastx, _lastObjVal);
-		//	}
+         
+            buildPartialDerivatives(p);
+         
+             _nIter = 0;
+             long start = System . currentTimeMillis ();
+             
+             _lastx.clear();
+             _lastx.setAll(_x0);
+             _lastObjVal = p.evaluate(_x0);
+             
+             _lastGradNorm = Double.MAX_VALUE;
+             
+             while(getNIter() < getMaxIter() && areWeFarFromMinimum()){
+                 _nIter++;
+                 Vector gradientAtLastPoint = calculateGradient(_lastx);
+                 _lastGradNorm = gradientAtLastPoint.computeL2Norm();
+                 _lastx = _lastx.sum(gradientAtLastPoint.scalarMult(-_stepSize));
+                 _lastObjVal = p.evaluate(_lastx);
+                 System.out.format("At iteration %d: %s objective value = %.3f\n", _nIter, _lastx, _lastObjVal);
+             }
 			
 		// Record the end time
 		_compTime = System.currentTimeMillis()-start;

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.TreeSet;
 
 import util.Vector;
+import util.VectorException;
 
 /** Implements an individual term in a polynomial.  If 5x^2 + 3xy is a polynomial,
  *  it has two terms 5x^2 and 2xy, each of which would be represented by a different
@@ -48,7 +49,7 @@ public class Term {
 
 		// You need to understand all lines of the following code
 		String[] factors = s.split("\\*");
-		for (String factor : factors) {
+		for (String factor : factors) { 
 			factor = factor.trim(); // Get rid of leading and trailing whitespace
 			try {
 				// If successful, multiplies in a constant (multiple constants in a product allowed)
@@ -111,17 +112,38 @@ public class Term {
 	//       the implementation of the methods below.
 	///////////////////////////////////////////////////////////////////////////////
 
+	public double getCoef() {
+		return _coef;
+	}
+	
+	
 	/** If Term defines a function f(x,y) = 2xy^2 and assignments is { x=2.0 y=3.0 } 
 	 *  then this method returns 36.0, which is the evaluation of f(2.0,3.0). 
 	 * 
 	 * @param assignments
 	 * @return
 	 * @throws PolyException
+	 * @throws VectorException 
 	 */
-	public double evaluate(Vector assignments) throws PolyException {
+	public double evaluate(Vector assignments) throws PolyException, VectorException {
+			if(assignments != null) {		
+			double product = 1.0d;
+			
+			for (int i = 0 ; i < _pows.size(); i++) {
+				for(String s : assignments.getKeySet()) {
+					if(s.equals(_vars.get(i))) {
+						product *= Math.pow(assignments.getValAt(s), _pows.get(i));
+					}
+				}
+			}
 
-		// TODO: Should not return 0!
-		return 0;
+			product *= _coef;
+			return product;
+			
+		}
+		else
+			throw new NullPointerException ("Imma need a real vector");
+		
 	}
 
 	/** If Term defines a function f(.) then this method returns the **symbolic**
@@ -136,9 +158,56 @@ public class Term {
 	 * @param var
 	 * @return partial derivative of this w.r.t. var as a new Term
 	 */
-	public Term differentiate(String var) {
-
-		// TODO: Should not return null!
-		return null;
+	public Term differentiate(String var) throws Exception{
+		//identify the position of the var to differentiate wrt in the term		
+		int i = this._vars.indexOf(var);
+		Term t = new Term(this._coef);
+		boolean found = false;
+		
+		t._pows.addAll(this._pows);
+		t._vars.addAll(this._vars);
+		
+		if(_pows.size() == 0) {
+			t._pows.removeAll(this._pows);
+			t._vars.removeAll(this._vars);
+			t._coef = 0;
+		}
+		
+		
+		
+		//apply differentiation to the specific part of the term
+		for(int j = 0 ; j < _vars.size() ; j++) {
+			if(j == i) {
+				found = true;
+				t._coef *= this._pows.get(j);
+				t._pows.set(j, this._pows.get(j) -1);
+				//if the exponent of a term is 0 remove that term
+				if(t._pows.get(j) == 0) {
+					t._pows.remove(j);
+					t._vars.remove(j);
+				}
+			}
+			
+		}
+		
+		if (!found) {
+			t._pows.removeAll(this._pows);
+			t._vars.removeAll(this._vars);
+			t._coef = 0;
+		}
+		
+		return t;
 	}
+	
+	
+	
+	public static void main(String[] args) throws Exception {
+		
+		Vector v = new Vector ("{ x=2.0 y=3.0 }");
+		Term t1 = new Term("2*x*y^2");
+		System.out.println(t1.evaluate(v));
+		System.out.println(t1.differentiate("x"));
+		System.out.println(t1.differentiate("y"));
+	}
+	
 }

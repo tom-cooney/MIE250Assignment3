@@ -1,10 +1,15 @@
 package poly;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
 import util.Vector;
+import util.VectorException;
 
 /** Implements a polynomial as a sum of terms.  If 5x^2 + 3xy is a polynomial,
  *  it has two Terms 5x^2 and 2xy, each stored in the member list _terms.
@@ -70,11 +75,12 @@ public class Polynomial {
 	 * @param file
 	 * @return
 	 * @throws PolyException if there were any errors reading or parsing the file
+	 * @throws IOException 
 	 */
-	public static Polynomial ReadPolynomial(File file) throws PolyException {
+	public static Polynomial ReadPolynomial(File file) throws PolyException, IOException {
 
-		// TODO: Should not return null!
-		return null;
+		BufferedReader fin = new BufferedReader(new FileReader (file));
+        return new Polynomial(fin.readLine());
 	}
 	
 	/** Returns all of the variables used in this Polynomial as a sorted set (TreeSet).
@@ -82,9 +88,11 @@ public class Polynomial {
 	 * @return (TreeSet of Strings as defined above)
 	 */
 	public TreeSet<String> getAllVars() {
-
-		// TODO: Should not return null!
-		return null;
+		TreeSet<String> tset = new TreeSet<String>();
+        for (Term x : _terms){
+            tset.addAll(x.getAllVars());
+        }
+        return tset;
 	}
 	
 	/** If Polynomial defines f(x,y) = 2xy^2 + xy and assignments is { x=2.0 y=3.0 } 
@@ -98,9 +106,11 @@ public class Polynomial {
 	 * (can throw either a VectorException or a PolyException -- Exception is a superclass)
 	 */
 	public double evaluate(Vector assignments) throws Exception {
-
-		// TODO: Should not return 0!
-		return 0;
+		double sum = 0;
+		for (int i = 0 ; i < _terms.size(); i++) {
+			sum += _terms.get(i).evaluate(assignments);
+		}
+		return sum;
 	}
 
 	/** If Polynomial defines a function f(.) then this method returns the **symbolic**
@@ -114,11 +124,22 @@ public class Polynomial {
 	 * 
 	 * @param var
 	 * @return partial derivative of this w.r.t. var as a new Term
+	 * @throws PolyException 
+	 * @throws VectorException 
 	 */
-	public Polynomial differentiate(String var) {
-
-		// TODO: Should not return null!
-		return null;
+	public Polynomial differentiate(String var) throws Exception {
+		if(var != null) {
+			Polynomial p = new Polynomial();
+			for(int i = 0 ; i < this._terms.size() ; i++) {
+				if(this._terms.get(i).differentiate(var).getCoef() != 0) {
+					p._terms.add(this._terms.get(i).differentiate(var));
+				}
+			}
+			return p;
+		}
+		else {
+			throw new Exception ("imma need some reazl vars here vbud");
+		}
 	}
 
 	/** Some examples testing the Polynomial and Term classes with expected output.
